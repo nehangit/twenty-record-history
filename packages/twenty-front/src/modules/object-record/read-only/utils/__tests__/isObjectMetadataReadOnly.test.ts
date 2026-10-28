@@ -1,0 +1,70 @@
+import { isObjectMetadataReadOnly } from '@/object-record/read-only/utils/isObjectMetadataReadOnly';
+
+describe('isObjectMetadataReadOnly', () => {
+  it('should return false if object can be updated and is not UI read only and is not remote', () => {
+    const result = isObjectMetadataReadOnly({
+      objectPermissions: {
+        canUpdateObjectRecords: true,
+      },
+      objectMetadataItem: {
+        isUIEditable: true,
+        isRemote: false,
+      },
+    });
+
+    expect(result).toBe(false);
+  });
+
+  it('should return true if object cannot be updated and is not UI read only and is not remote', () => {
+    const result = isObjectMetadataReadOnly({
+      objectPermissions: {
+        canUpdateObjectRecords: false,
+      },
+      objectMetadataItem: {
+        isUIEditable: true,
+        isRemote: false,
+      },
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('should return true if object metadata is UI read only', () => {
+    const result = isObjectMetadataReadOnly({
+      objectPermissions: {
+        canUpdateObjectRecords: true,
+      },
+      objectMetadataItem: {
+        isUIEditable: false,
+        isRemote: false,
+      },
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('should return true if object metadata is remote', () => {
+    const result = isObjectMetadataReadOnly({
+      objectPermissions: {
+        canUpdateObjectRecords: true,
+      },
+      objectMetadataItem: {
+        isUIEditable: true,
+        isRemote: true,
+      },
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('should return false without object permissions when the object is OPEN', () => {
+    const result = isObjectMetadataReadOnly({
+      objectMetadataItem: {
+        isUIEditable: true,
+        isRemote: false,
+      },
+    });
+
+    expect(result).toBe(false);
+  });
+});

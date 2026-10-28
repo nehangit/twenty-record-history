@@ -1,0 +1,38 @@
+---
+title: Servidor local
+description: Conecta la CLI independiente a un servidor Twenty local.
+---
+
+import { PageBanner } from "/snippets/page-banner.mdx"
+
+## Configuración
+
+La CLI independiente se conecta a un servidor Twenty en ejecución. No inicia ni administra contenedores de Docker.
+
+Usa la [guía de autoalojamiento](/es/developers/self-host/self-host) para ejecutar Twenty con Docker. En una copia local de un repositorio de Twenty, también funciona el entorno de desarrollo existente:
+
+```bash
+bash packages/twenty-utils/setup-dev-env.sh
+yarn start
+```
+
+Luego autentícate con la URL del servidor de tu espacio de trabajo:
+
+```bash
+twenty auth login --url http://localhost:3000 --name local
+twenty app apply --create --remote local
+```
+
+Usa la URL y el puerto reales de tu servidor. Para espacios de trabajo con subdominios, usa el nombre de host del espacio de trabajo.
+
+## Pruebas de integración
+
+Usa un servidor o espacio de trabajo independiente y desechable. La configuración de las pruebas de integración instala una aplicación y el desmontaje la desinstala. Configura `TWENTY_API_URL` y `TWENTY_API_KEY` para esa instancia de prueba antes de ejecutar `yarn test`.
+
+El flujo de trabajo de CI generado aprovisiona una instancia aislada mediante `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` e instala la CLI independiente por separado.
+
+## Dependencias del proyecto
+
+Instala `twenty-sdk` y `twenty-client-sdk` como dependencias del proyecto. Instala la CLI `twenty` globalmente y, luego, ejecuta `twenty app typecheck`, `twenty app build` y `twenty app apply` desde el directorio de la aplicación.
+
+<PageBanner illustration="dev-self-host" />

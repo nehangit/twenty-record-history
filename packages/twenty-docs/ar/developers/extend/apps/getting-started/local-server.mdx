@@ -1,0 +1,38 @@
+---
+title: الخادم المحلي
+description: صِل واجهة سطر الأوامر المستقلة بخادم Twenty محلي.
+---
+
+import { PageBanner } from "/snippets/page-banner.mdx"
+
+## إعداد
+
+تتصل واجهة سطر الأوامر المستقلة بخادم Twenty قيد التشغيل. لا يبدأ حاويات Docker ولا يديرها.
+
+استخدم [دليل الاستضافة الذاتية](/ar/developers/self-host/self-host) لتشغيل Twenty باستخدام Docker. في نسخة مستودع Twenty المُخرَجة، تعمل أيضًا بيئة التطوير الحالية:
+
+```bash
+bash packages/twenty-utils/setup-dev-env.sh
+yarn start
+```
+
+ثم صادِق باستخدام عنوان URL للخادم لمساحة عملك:
+
+```bash
+twenty auth login --url http://localhost:3000 --name local
+twenty app apply --create --remote local
+```
+
+استخدم عنوان URL والمنفذ الفعليين لخادمك. لمساحات العمل ذات النطاقات الفرعية، استخدم اسم مضيف مساحة العمل.
+
+## اختبارات التكامل
+
+استخدم خادمًا منفصلًا أو مساحة عمل منفصلة قابلة للتخلص منها. يؤدي إعداد اختبار التكامل إلى تثبيت تطبيق، بينما يؤدي التنظيف إلى إلغاء تثبيته. عيّن `TWENTY_API_URL` و`TWENTY_API_KEY` لمثيل الاختبار هذا قبل تشغيل `yarn test`.
+
+يوفّر سير عمل CI المُنشأ مثيلًا معزولًا عبر `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` ويثبّت واجهة سطر الأوامر المستقلة بشكل منفصل.
+
+## تبعيّات المشروع
+
+ثبّت `twenty-sdk` و`twenty-client-sdk` كتبعيّات للمشروع. ثبّت واجهة سطر الأوامر `twenty` على مستوى النظام، ثم شغّل `twenty app typecheck` و`twenty app build` و`twenty app apply` من دليل التطبيق.
+
+<PageBanner illustration="dev-self-host" />

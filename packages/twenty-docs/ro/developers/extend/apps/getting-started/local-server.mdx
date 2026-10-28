@@ -1,0 +1,38 @@
+---
+title: Server local
+description: Conectați CLI-ul autonom la un server Twenty local.
+---
+
+import { PageBanner } from "/snippets/page-banner.mdx"
+
+## Configurare
+
+CLI-ul autonom se conectează la un server Twenty care rulează. Nu pornește și nu gestionează containere Docker.
+
+Utilizați [ghidul de auto-găzduire](/ro/developers/self-host/self-host) pentru a rula Twenty cu Docker. Într-un checkout al depozitului Twenty, funcționează și mediul de dezvoltare existent:
+
+```bash
+bash packages/twenty-utils/setup-dev-env.sh
+yarn start
+```
+
+Apoi autentificați-vă la URL-ul serverului pentru spațiul dvs. de lucru:
+
+```bash
+twenty auth login --url http://localhost:3000 --name local
+twenty app apply --create --remote local
+```
+
+Utilizați URL-ul și portul efective ale serverului dvs. Pentru spațiile de lucru cu subdomenii, utilizați numele de gazdă al spațiului de lucru.
+
+## Teste de integrare
+
+Utilizați un server sau un spațiu de lucru separat, care poate fi eliminat. Configurarea testelor de integrare instalează o aplicație, iar etapa de curățare o dezinstalează. Setați `TWENTY_API_URL` și `TWENTY_API_KEY` la acea instanță de test înainte de a rula `yarn test`.
+
+Fluxul de lucru CI generat configurează o instanță izolată prin `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` și instalează separat CLI-ul autonom.
+
+## Dependențele proiectului
+
+Instalați `twenty-sdk` și `twenty-client-sdk` ca dependențe ale proiectului. Instalați CLI-ul `twenty` global, apoi rulați `twenty app typecheck`, `twenty app build` și `twenty app apply` din directorul aplicației.
+
+<PageBanner illustration="dev-self-host" />

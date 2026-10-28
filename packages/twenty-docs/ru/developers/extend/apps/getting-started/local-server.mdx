@@ -1,0 +1,38 @@
+---
+title: Локальный сервер
+description: Подключите автономный CLI к локальному серверу Twenty.
+---
+
+import { PageBanner } from "/snippets/page-banner.mdx"
+
+## Настройка
+
+Автономный CLI подключается к запущенному серверу Twenty. Он не запускает контейнеры Docker и не управляет ими.
+
+Используйте [руководство по самостоятельному хостингу](/ru/developers/self-host/self-host), чтобы запустить Twenty с Docker. В рабочей копии репозитория Twenty также работает существующая среда разработки:
+
+```bash
+bash packages/twenty-utils/setup-dev-env.sh
+yarn start
+```
+
+Затем пройдите аутентификацию на URL-адресе сервера для вашего рабочего пространства:
+
+```bash
+twenty auth login --url http://localhost:3000 --name local
+twenty app apply --create --remote local
+```
+
+Используйте фактический URL-адрес и порт вашего сервера. Для рабочих пространств с поддоменами используйте имя хоста рабочего пространства.
+
+## Интеграционные тесты
+
+Используйте отдельный временный сервер или рабочее пространство. Настройка интеграционного теста устанавливает приложение, а очистка удаляет его. Перед запуском `yarn test` задайте для этого тестового экземпляра `TWENTY_API_URL` и `TWENTY_API_KEY`.
+
+Сгенерированный рабочий процесс CI разворачивает изолированный экземпляр через `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` и отдельно устанавливает автономный CLI.
+
+## Зависимости проекта
+
+Установите `twenty-sdk` и `twenty-client-sdk` в качестве зависимостей проекта. Установите CLI `twenty` глобально, затем выполните `twenty app typecheck`, `twenty app build` и `twenty app apply` из каталога приложения.
+
+<PageBanner illustration="dev-self-host" />
