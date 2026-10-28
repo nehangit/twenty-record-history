@@ -157,6 +157,38 @@ describe('filterOutInvalidTimelineActivities', () => {
     expect(filter(events)).toEqual([]);
   });
 
+  it('trims diff fields whose value did not change and drops events left empty', () => {
+    const events: TestTimelineActivity[] = [
+      {
+        id: '1',
+        timelineActivityTypeId: UPDATED_TYPE_ID,
+        properties: {
+          diff: {
+            field1: { before: 'value1', after: 'value1' },
+            field2: { before: { a: 1 }, after: { a: 2 } },
+          },
+        },
+      },
+      {
+        id: '2',
+        timelineActivityTypeId: UPDATED_TYPE_ID,
+        properties: {
+          diff: { field3: { before: { a: 1 }, after: { a: 1 } } },
+        },
+      },
+    ];
+
+    expect(filter(events)).toEqual([
+      {
+        id: '1',
+        timelineActivityTypeId: UPDATED_TYPE_ID,
+        properties: {
+          diff: { field2: { before: { a: 1 }, after: { a: 2 } } },
+        },
+      },
+    ]);
+  });
+
   it('drops update events that have no diff', () => {
     const events: TestTimelineActivity[] = [
       { id: '1', timelineActivityTypeId: UPDATED_TYPE_ID, properties: {} },

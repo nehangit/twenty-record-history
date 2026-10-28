@@ -15,6 +15,7 @@ import { themeCssVariables } from 'twenty-ui/theme';
 type EventRelationFieldDiffValuesProps = {
   fieldDiff: { before: unknown; after: unknown };
   fieldMetadataItem: FieldMetadataItem;
+  isBeforeValueShown?: boolean;
 };
 
 const StyledRelationValue = styled.div`
@@ -26,6 +27,17 @@ const StyledRelationValue = styled.div`
 
 const StyledEmptyValue = styled.div`
   color: ${themeCssVariables.font.color.tertiary};
+`;
+
+const StyledRelationValues = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+  overflow: hidden;
+`;
+
+const StyledArrowContainer = styled.span`
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const getRelationRecordId = (value: unknown): string | null => {
@@ -43,9 +55,11 @@ const getRelationRecordId = (value: unknown): string | null => {
 const EventRelationFieldDiffValuesWithFetch = ({
   fieldDiff,
   relationTargetObjectMetadataNameSingular,
+  isBeforeValueShown,
 }: {
   fieldDiff: { before: unknown; after: unknown };
   relationTargetObjectMetadataNameSingular: string;
+  isBeforeValueShown: boolean;
 }) => {
   const relationRecordIds = useMemo(() => {
     const recordIds = new Set<string>();
@@ -115,16 +129,28 @@ const EventRelationFieldDiffValuesWithFetch = ({
     <RelationFieldDiffValue
       beforeDisplayName={beforeDisplayName}
       afterDisplayName={afterDisplayName}
+      isBeforeValueShown={isBeforeValueShown}
     />
   );
 };
 
+const renderRelationDisplayName = (displayName: string | null) =>
+  displayName !== null ? (
+    <StyledRelationValue>{displayName}</StyledRelationValue>
+  ) : (
+    <StyledEmptyValue>
+      <Trans>Empty</Trans>
+    </StyledEmptyValue>
+  );
+
 const RelationFieldDiffValue = ({
   beforeDisplayName,
   afterDisplayName,
+  isBeforeValueShown,
 }: {
   beforeDisplayName: string | null;
   afterDisplayName: string | null;
+  isBeforeValueShown: boolean;
 }) => {
   const { t } = useLingui();
   const emptyLabel = t`Empty`;
@@ -139,12 +165,14 @@ const RelationFieldDiffValue = ({
       side="bottom"
       positionMethod="fixed"
     >
-      {afterDisplayName !== null ? (
-        <StyledRelationValue>{afterDisplayName}</StyledRelationValue>
+      {isBeforeValueShown ? (
+        <StyledRelationValues>
+          {renderRelationDisplayName(beforeDisplayName)}
+          <StyledArrowContainer>→</StyledArrowContainer>
+          {renderRelationDisplayName(afterDisplayName)}
+        </StyledRelationValues>
       ) : (
-        <StyledEmptyValue>
-          <Trans>Empty</Trans>
-        </StyledEmptyValue>
+        renderRelationDisplayName(afterDisplayName)
       )}
     </Tooltip>
   );
@@ -153,6 +181,7 @@ const RelationFieldDiffValue = ({
 export const EventRelationFieldDiffValues = ({
   fieldDiff,
   fieldMetadataItem,
+  isBeforeValueShown = false,
 }: EventRelationFieldDiffValuesProps) => {
   const relationTargetObjectMetadataNameSingular =
     fieldMetadataItem.relation?.targetObjectMetadata.nameSingular;
@@ -165,6 +194,7 @@ export const EventRelationFieldDiffValues = ({
       <RelationFieldDiffValue
         beforeDisplayName={beforeDisplayName}
         afterDisplayName={afterDisplayName}
+        isBeforeValueShown={isBeforeValueShown}
       />
     );
   }
@@ -175,6 +205,7 @@ export const EventRelationFieldDiffValues = ({
       relationTargetObjectMetadataNameSingular={
         relationTargetObjectMetadataNameSingular
       }
+      isBeforeValueShown={isBeforeValueShown}
     />
   );
 };

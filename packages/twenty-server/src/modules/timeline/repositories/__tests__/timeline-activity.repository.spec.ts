@@ -8,6 +8,7 @@ const WORKSPACE_ID = '20202020-0000-4000-8000-000000000001';
 const RECORD_ID = '20202020-0000-4000-8000-000000000002';
 const WORKSPACE_MEMBER_ID = '20202020-0000-4000-8000-000000000003';
 const TIMELINE_ACTIVITY_TYPE_ID = '20202020-0000-4000-8000-000000000004';
+const LINKED_RECORD_ID = '20202020-0000-4000-8000-000000000007';
 const TIMELINE_ACTIVITY_TYPE_SNAPSHOT: TimelineActivityTypeSnapshot = {
   id: TIMELINE_ACTIVITY_TYPE_ID,
   universalIdentifier: '20202020-0000-4000-8000-000000000005',
@@ -48,7 +49,7 @@ const buildTimelineActivityRepository = (
 };
 
 describe('TimelineActivityRepository', () => {
-  it('merges and stamps a recent row written without a snapshot', async () => {
+  it('merges and stamps a recent linked row written without a snapshot', async () => {
     const {
       repository,
       workspaceRepository: { update, insert },
@@ -59,7 +60,7 @@ describe('TimelineActivityRepository', () => {
         workspaceMemberId: WORKSPACE_MEMBER_ID,
         timelineActivityTypeId: TIMELINE_ACTIVITY_TYPE_ID,
         timelineActivityTypeSnapshot: null,
-        linkedRecordId: null,
+        linkedRecordId: LINKED_RECORD_ID,
         properties: {
           diff: { name: { before: 'Before', after: 'First' } },
         },
@@ -79,6 +80,7 @@ describe('TimelineActivityRepository', () => {
           workspaceMemberId: WORKSPACE_MEMBER_ID,
           timelineActivityTypeId: TIMELINE_ACTIVITY_TYPE_ID,
           timelineActivityTypeSnapshot: TIMELINE_ACTIVITY_TYPE_SNAPSHOT,
+          linkedRecordId: LINKED_RECORD_ID,
         },
       ],
     });
@@ -94,6 +96,55 @@ describe('TimelineActivityRepository', () => {
         timelineActivityTypeSnapshot: TIMELINE_ACTIVITY_TYPE_SNAPSHOT,
       },
     );
+  });
+
+  it('inserts each update of a record own timeline instead of merging it', async () => {
+    const {
+      repository,
+      workspaceRepository: { update, insert },
+    } = buildTimelineActivityRepository([
+      {
+        id: '20202020-0000-4000-8000-000000000006',
+        targetPersonId: RECORD_ID,
+        workspaceMemberId: WORKSPACE_MEMBER_ID,
+        timelineActivityTypeId: TIMELINE_ACTIVITY_TYPE_ID,
+        timelineActivityTypeSnapshot: TIMELINE_ACTIVITY_TYPE_SNAPSHOT,
+        linkedRecordId: null,
+        properties: {
+          diff: { jobTitle: { before: 'Engineer', after: 'Manager' } },
+        },
+      },
+    ]);
+
+    const happensAt = new Date('2026-08-23T09:05:00.000Z');
+
+    await repository.upsertTimelineActivities({
+      objectSingularName: 'person',
+      workspaceId: WORKSPACE_ID,
+      payloads: [
+        {
+          happensAt,
+          properties: {
+            diff: { jobTitle: { before: 'Manager', after: 'Engineer' } },
+          },
+          recordId: RECORD_ID,
+          workspaceMemberId: WORKSPACE_MEMBER_ID,
+          timelineActivityTypeId: TIMELINE_ACTIVITY_TYPE_ID,
+          timelineActivityTypeSnapshot: TIMELINE_ACTIVITY_TYPE_SNAPSHOT,
+        },
+      ],
+    });
+
+    expect(update).not.toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledWith([
+      expect.objectContaining({
+        happensAt,
+        targetPersonId: RECORD_ID,
+        properties: {
+          diff: { jobTitle: { before: 'Manager', after: 'Engineer' } },
+        },
+      }),
+    ]);
   });
 
   it('locks merge identities in a stable order before reading recent rows', async () => {

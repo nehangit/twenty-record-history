@@ -187,6 +187,7 @@ const ROUTED_CALENDAR_EVENT_STARTS_AT = '2024-04-02T14:00:00.000Z';
 const ROUTED_CALENDAR_EVENT_RESCHEDULED_STARTS_AT = '2024-04-09T16:00:00.000Z';
 const ATTACHMENT_ID = '20202020-7171-4000-8000-000000000016';
 const ORM_V2_COMPOSITE_COMPANY_ID = '20202020-7171-4000-8000-000000000017';
+const HISTORY_PERSON_ID = '20202020-7171-4000-8000-000000000019';
 const BATCH_COMPANY_IDS = [
   '20202020-7171-4000-8000-000000000008',
   '20202020-7171-4000-8000-000000000009',
@@ -213,6 +214,7 @@ const CREATED_RECORD_IDS: { objectMetadataSingularName: string; id: string }[] =
       id: ROUTED_MESSAGE_THREAD_ID,
     },
     { objectMetadataSingularName: 'person', id: ROUTED_PERSON_ID },
+    { objectMetadataSingularName: 'person', id: HISTORY_PERSON_ID },
     { objectMetadataSingularName: 'noteTarget', id: NOTE_TARGET_ID },
     { objectMetadataSingularName: 'note', id: NOTE_ID },
     { objectMetadataSingularName: 'messageList', id: MESSAGE_LIST_ID },
@@ -432,7 +434,7 @@ describe('timeline activity write path (integration)', () => {
       });
     });
 
-    it('should merge every record of a multi record batch', async () => {
+    it('should write one entry per update for every record of a multi record batch', async () => {
       for (const [index, id] of BATCH_COMPANY_IDS.entries()) {
         await createRecord({
           objectMetadataSingularName: 'company',
@@ -467,13 +469,74 @@ describe('timeline activity write path (integration)', () => {
           },
         });
 
-        expect(timelineActivities).toHaveLength(1);
-        expect(timelineActivities[0].properties).toEqual({
-          diff: {
-            name: { before: `Batch ${index}`, after: 'Batch renamed twice' },
+        expect(timelineActivities.map(({ properties }) => properties)).toEqual([
+          {
+            diff: {
+              name: { before: `Batch ${index}`, after: 'Batch renamed once' },
+            },
           },
-        });
+          {
+            diff: {
+              name: {
+                before: 'Batch renamed once',
+                after: 'Batch renamed twice',
+              },
+            },
+          },
+        ]);
       }
+    });
+
+    it('should keep each step of a reverted edit with its own time', async () => {
+      await createRecord({
+        objectMetadataSingularName: 'person',
+        data: { id: HISTORY_PERSON_ID, jobTitle: 'Engineer' },
+      });
+
+      await updateRecord({
+        objectMetadataSingularName: 'person',
+        recordId: HISTORY_PERSON_ID,
+        data: { jobTitle: 'Manager' },
+      });
+      await waitForAllJobsToFinish();
+
+      await updateRecord({
+        objectMetadataSingularName: 'person',
+        recordId: HISTORY_PERSON_ID,
+        data: { jobTitle: 'Engineer' },
+      });
+
+      const timelineActivities = await findTimelineActivities({
+        targetPersonId: { eq: HISTORY_PERSON_ID },
+        timelineActivityTypeId: {
+          eq: timelineActivityTypeIdForOrThrow('updated'),
+        },
+      });
+
+      expect(timelineActivities.map(({ properties }) => properties)).toEqual([
+        { diff: { jobTitle: { before: 'Engineer', after: 'Manager' } } },
+        { diff: { jobTitle: { before: 'Manager', after: 'Engineer' } } },
+      ]);
+      expect(
+        new Date(timelineActivities[1].happensAt).getTime(),
+      ).toBeGreaterThan(new Date(timelineActivities[0].happensAt).getTime());
+    });
+
+    it('should not write an entry for an update that changes nothing', async () => {
+      await updateRecord({
+        objectMetadataSingularName: 'person',
+        recordId: HISTORY_PERSON_ID,
+        data: { jobTitle: 'Engineer' },
+      });
+
+      const timelineActivities = await findTimelineActivities({
+        targetPersonId: { eq: HISTORY_PERSON_ID },
+        timelineActivityTypeId: {
+          eq: timelineActivityTypeIdForOrThrow('updated'),
+        },
+      });
+
+      expect(timelineActivities).toHaveLength(2);
     });
 
     it('should not write an entry for a position only change', async () => {

@@ -5,7 +5,7 @@ import { getTimelineActivityAction } from '@/activities/timeline-activities/util
 import { getTimelineActivityLinkedObjectMetadataItem } from '@/activities/timeline-activities/utils/getTimelineActivityLinkedObjectMetadataItem';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
-import { isDefined } from 'twenty-shared/utils';
+import { fastDeepEqual, isDefined } from 'twenty-shared/utils';
 import { doNotTranslate } from 'twenty-shared/i18n';
 
 const keepActivityWithReadableDiff = <
@@ -16,8 +16,11 @@ const keepActivityWithReadableDiff = <
 ): TTimelineActivity | undefined => {
   const validDiffEntries = Object.entries(
     timelineActivity.properties?.diff ?? {},
-  ).filter(([diffKey]) =>
-    isDefined(findFieldMetadataItemByDiffKey(readableFields, diffKey)),
+  ).filter(
+    ([diffKey, { before, after }]) =>
+      isDefined(findFieldMetadataItemByDiffKey(readableFields, diffKey)) &&
+      // Rows merged before update merging was removed can hold a reverted edit
+      !fastDeepEqual(before, after),
   );
 
   if (validDiffEntries.length === 0) {

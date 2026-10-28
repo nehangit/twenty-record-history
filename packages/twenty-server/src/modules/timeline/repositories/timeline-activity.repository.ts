@@ -33,6 +33,16 @@ const ACQUIRE_TIMELINE_ACTIVITY_MERGE_LOCK = `SELECT pg_advisory_xact_lock(hasht
    FROM unnest($1::text[]) WITH ORDINALITY AS "locks"("lockName", "ordinality")
    ORDER BY "ordinality"`;
 
+// Merging would fold a reverted edit into a misleading before === after diff
+const isRecordOwnUpdate = (
+  payload: Pick<
+    TimelineActivityPayload,
+    'timelineActivityTypeSnapshot' | 'linkedRecordId'
+  >,
+): boolean =>
+  payload.timelineActivityTypeSnapshot?.action === 'updated' &&
+  !isDefined(payload.linkedRecordId);
+
 const isForeignKeyViolation = (error: unknown): boolean =>
   (error as Error & { cause?: { code?: unknown } }).cause?.code ===
   POSTGRESQL_ERROR_CODES.FOREIGN_KEY_VIOLATION;
@@ -223,6 +233,11 @@ export class TimelineActivityRepository {
           }
 
           for (const payload of payloads) {
+            if (isRecordOwnUpdate(payload)) {
+              payloadsToInsert.push(payload);
+              continue;
+            }
+
             const recentTimelineActivity =
               buildTimelineActivityMergeKeyCandidates({
                 recordId: payload.recordId,

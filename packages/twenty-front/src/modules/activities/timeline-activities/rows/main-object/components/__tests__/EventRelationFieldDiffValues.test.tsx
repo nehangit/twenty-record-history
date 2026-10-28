@@ -121,6 +121,34 @@ describe('EventRelationFieldDiffValues', () => {
     expect(screen.queryByText('Empty')).not.toBeInTheDocument();
   });
 
+  describe('with the before value shown', () => {
+    it('renders the before and after record names inline', () => {
+      renderWithI18n(
+        <EventRelationFieldDiffValues
+          fieldDiff={{ before: { id: 'before-id' }, after: { id: 'after-id' } }}
+          fieldMetadataItem={relationFieldMetadataItem}
+          isBeforeValueShown
+        />,
+      );
+
+      expect(screen.getByText('Tim A')).toBeInTheDocument();
+      expect(screen.getByText('Tim Apple')).toBeInTheDocument();
+    });
+
+    it('renders "Empty" for the before value when a relation is set from null', () => {
+      renderWithI18n(
+        <EventRelationFieldDiffValues
+          fieldDiff={{ before: { id: null }, after: { id: 'after-id' } }}
+          fieldMetadataItem={relationFieldMetadataItem}
+          isBeforeValueShown
+        />,
+      );
+
+      expect(screen.getByText('Empty')).toBeInTheDocument();
+      expect(screen.getByText('Tim Apple')).toBeInTheDocument();
+    });
+  });
+
   // Hovering the value reveals a tooltip with the full before -> after change,
   // even though only the after value is shown inline.
   describe('before -> after tooltip on hover', () => {
